@@ -153,6 +153,42 @@ tr.exportTo('cp', () => {
       return userEmail.endsWith('@google.com');
     }
 
+    static async displayNextAlertGroup_ (statePath, dispatch, getState) {
+      // Queries dashboard/dashboard/api/alerts.py.
+      // UnpriviledgedPost.
+      const request = new cp.AlertsRequest({ body: {
+        sheriff: "Chromium Perf Sheriff",
+        triaged: false,
+        is_improvement: false,
+        bug_id: '',
+        limit: 50,
+      }});
+
+      console.log("About to start request");
+      const response = await request.response;
+      const alerts = response.anomalies;
+
+      let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
+
+      let alreadyTriaged = alerts.filter(alert => alert.bug_id !== undefined)
+
+      let alertGroup = alertGroups[0];
+      for (let alert of alertGroup) {
+        ChromeperfApp.actions.newChart(
+          statePath, {
+            "maxRevision":9900,
+            "parameters":{
+              "testSuites":[alert.descriptor.testSuite],
+              "measurements":[alert.descriptor.measurement],
+              "bots":[alert.descriptor.bot],
+              "testCases":[alert.descriptor.testCase],
+              "statistic":alert.descriptor.statistic,
+            }
+          }
+        )(dispatch, getState);
+      }
+    }
+
     get isProduction() {
       return window.IS_PRODUCTION;
     }
@@ -233,7 +269,12 @@ tr.exportTo('cp', () => {
         // Now, if the user is signed in, we have authorizationHeaders. Try to
         // restore session state, which might include internal data.
         await ChromeperfApp.actions.restoreFromRoute(
-            statePath, routeParams)(dispatch, getState);
+          statePath, routeParams)(dispatch, getState);
+
+        await ChromeperfApp.displayNextAlertGroup_(statePath, dispatch, getState);
+
+//        await(dispatch({
+//          type:
 
         // The app is done loading.
         dispatch(Redux.UPDATE(statePath, {
@@ -245,8 +286,6 @@ tr.exportTo('cp', () => {
           // In production, this api is only available to chromium members.
           cp.ChromeperfApp.actions.getRecentBugs()(dispatch, getState);
         }
-
-        await dispatch('newChart', statePath);
       },
 
     reportSectionShowing: (statePath, showingReportSection) =>
@@ -608,9 +647,6 @@ tr.exportTo('cp', () => {
 
       const chartSectionIds = Array.from(state.chartSectionIds);
       chartSectionIds.push(sectionId);
-
-      console.log("chartSectionIds");
-      console.log(chartSectionIds);
 
       if (chartSectionIds.length === 1 && action.options) {
         const linkedChartState = cp.buildState(
