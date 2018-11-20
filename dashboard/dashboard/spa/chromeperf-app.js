@@ -245,6 +245,8 @@ tr.exportTo('cp', () => {
           // In production, this api is only available to chromium members.
           cp.ChromeperfApp.actions.getRecentBugs()(dispatch, getState);
         }
+
+        await dispatch('newChart', statePath);
       },
 
     reportSectionShowing: (statePath, showingReportSection) =>
@@ -606,6 +608,9 @@ tr.exportTo('cp', () => {
 
       const chartSectionIds = Array.from(state.chartSectionIds);
       chartSectionIds.push(sectionId);
+
+      console.log("chartSectionIds");
+      console.log(chartSectionIds);
 
       if (chartSectionIds.length === 1 && action.options) {
         const linkedChartState = cp.buildState(

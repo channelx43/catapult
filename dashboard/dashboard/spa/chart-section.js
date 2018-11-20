@@ -7,11 +7,32 @@ tr.exportTo('cp', () => {
   class ChartSection extends cp.ElementBase {
     ready() {
       super.ready();
+      console.log("chart section ready");
       this.scrollIntoView(true);
     }
 
+/*    async loadAlerts() {
+      const sources = {
+        sheriff: "Chromium Perf Sheriff",
+        limit: 5,
+//        min_start_revision:
+//        max_start_revision
+      }
+
+      await Promise.all(sources.map(async body => {
+        const request = new cp.AlertsRequest({body});
+        const response = await request.response;
+        alerts.push.apply(alerts, response.anomalies);
+      }));
+    }*/
+
+
     connectedCallback() {
       super.connectedCallback();
+      console.log("start load alerts");
+//      loadAlerts();
+//      console.log("end load alerts");
+
       this.dispatch('connected', this.statePath);
     }
 
