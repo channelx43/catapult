@@ -160,14 +160,6 @@ tr.exportTo('cp', () => {
     onReset_(event) {
       this.dispatch('reset', this.statePath);
     }
-
-    static onHotkey(e) {
-      switch(e.key) {
-      case "i":
-        console.log("hit i");
-        break;
-      }
-    }
   }
 
   ChromeperfApp.State = {
@@ -245,8 +237,7 @@ tr.exportTo('cp', () => {
 
 
         document.addEventListener("keydown", (e) => {
-//          a
-          ChromeperfApp.onHotkey(e);
+          dispatch("ignoreGroup");
         });
 
         await dispatch("displayNextAlertGroup", statePath);
@@ -263,7 +254,7 @@ tr.exportTo('cp', () => {
         }
       },
 
-    displayNextAlertGroup:(statePath, dispatch, getState) => async (dispatch, getState) => {
+    displayNextAlertGroup:(statePath) => async (dispatch, getState) => {
       // Queries dashboard/dashboard/api/alerts.py.
       // UnpriviledgedPost.
       const request = new cp.AlertsRequest({ body: {
@@ -289,7 +280,8 @@ tr.exportTo('cp', () => {
           'newChart',
           statePath,
           {
-            "maxRevision":9900,
+            "minRevision":undefined,
+            "maxRevision":undefined,
             "parameters":{
               "testSuites":[alert.descriptor.testSuite],
               "measurements":[alert.descriptor.measurement],
@@ -299,6 +291,11 @@ tr.exportTo('cp', () => {
             }
           });
       }
+    },
+
+    ignoreGroup: () => async (dispatch, getState) => {
+
+      console.log("ignoring group");
     },
 
     reportSectionShowing: (statePath, showingReportSection) =>
