@@ -67,6 +67,35 @@ tr.exportTo('cp', () => {
     }
   }
 
+  class NewBugRequest extends cp.RequestBase {
+    constructor(options) {
+      super(options);
+      this.method_ = 'POST';
+      this.body_ = new FormData();
+      for (const key of options.alertKeys) this.body_.append('key', key);
+      for (const label of options.labels) this.body_.append('label', label);
+      for (const component of options.components) {
+        this.body_.append('component', component);
+      }
+      this.body_.set('summary', options.summary);
+      this.body_.set('description', options.description);
+      this.body_.set('owner', options.owner);
+      this.body_.set('cc', options.cc);
+    }
+
+    get url_() {
+      return '/api/alerts/new_bug';
+    }
+
+    async localhostResponse_() {
+      return {bug_id: 123450000 + tr.b.GUID.allocateSimple()};
+    }
+
+    postProcess_(json) {
+      return json.bug_id;
+    }
+  }
+
   class ChromeperfApp extends cp.ElementBase {
     get clientId() {
       return CLIENT_ID;
@@ -358,7 +387,61 @@ tr.exportTo('cp', () => {
       const state = Polymer.Path.get(getState(), statePath);
       const alertGroupIndex = state.alertGroupIndex;
       const alertGroups = state.alertGroups;
-      const alertKeys = alertGroups[alertGroupIndex].map(a => a.key)
+      const alerts = alertGroups[alertGroupIndex]
+      const alertKeys = alerts.map(a => a.key)
+
+      const triageNew = new cp.TriageNew();
+      console.log(triageNew);
+
+      let userEmail = getState().userEmail;
+
+      console.log("User email is " + userEmail);
+      if (window.IS_DEBUG) {
+        userEmail = 'you@chromium.org';
+        console.log("DEBUG");
+      }
+      if (!userEmail) {
+        console.log("no user email");
+        return;
+      }
+
+      console.log("Pre new bug");
+
+      const newBug = {
+        cc: userEmail,
+        components: cp.TriageNew.collectComponents(alerts),
+        description: '',
+/*        isOpen: {
+          value: options => options.isOpen || false,
+          reflectToAttribute: true,
+        },*/
+        labels: cp.TriageNew.collectLabels(alerts),
+        owner: '',
+        summary: cp.TriageNew.summarize(alerts),
+      }
+
+      console.log("new bug stuff");
+      console.log(newBug);
+      return;
+
+      const request = new NewBugRequest({
+        alertKeys,
+        ...state.newBug,
+        labels: state.newBug.labels.filter(
+          x => x.isEnabled).map(x => x.name),
+        components: state.newBug.components.filter(
+          x => x.isEnabled).map(x => x.name),
+      });
+      const summary = state.newBug.summary;
+      bugId = await request.response;
+/*      dispatch({
+        type: AlertsSection.reducers.showTriagedNew.name,
+        statePath,
+        bugId,
+        summary,
+      });*/
+
+//      triageNew.buildState({isOpen: true, alerts, userEmail});
 
       // -2 might be the magic word to ignore alerts?
 /*      const request = new ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
