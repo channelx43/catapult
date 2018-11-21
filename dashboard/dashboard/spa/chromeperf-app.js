@@ -275,8 +275,8 @@ tr.exportTo('cp', () => {
 
         // Now, if the user is signed in, we have authorizationHeaders. Try to
         // restore session state, which might include internal data.
-        await ChromeperfApp.actions.restoreFromRoute(
-          statePath, routeParams)(dispatch, getState);
+//        await ChromeperfApp.actions.restoreFromRoute(
+//          statePath, routeParams)(dispatch, getState);
 
 
         document.addEventListener("keydown", (e) => {
@@ -327,7 +327,7 @@ tr.exportTo('cp', () => {
       }
 
 
-      dispatch(Redux.UPDATE(statePath, {alertGroups, alertGroupIndex: 0}));
+      dispatch(Redux.UPDATE(statePath, {alertGroups}));
       dispatch("displayCurrentAlertGroup", statePath);
     },
 
@@ -337,11 +337,9 @@ tr.exportTo('cp', () => {
 
       const state = Polymer.Path.get(getState(), statePath);
       const alertGroups = state.alertGroups;
-      const alertGroupIndex = state.alertGroupIndex;
       console.log(alertGroups);
-      console.log(alertGroupIndex);
 
-      let alertGroup = alertGroups[alertGroupIndex];
+      let alertGroup = alertGroups[0];
       for (let alert of alertGroup) {
         console.log(alert.descriptor.testSuite);
         dispatch(
@@ -364,17 +362,14 @@ tr.exportTo('cp', () => {
 
     ignoreGroup: (statePath) => async (dispatch, getState) => {
       const state = Polymer.Path.get(getState(), statePath);
-      const alertGroupIndex = state.alertGroupIndex;
       const alertGroups = state.alertGroups;
-      const alertKeys = alertGroups[alertGroupIndex].map(a => a.key)
+      const alertKeys = alertGroups[0].map(a => a.key)
 
       // -2 might be the magic word to ignore alerts?
       const request = new ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
       await request.response;
       console.log(request.response);
       console.log(request);
-
-      // TODO - remove group from list.
 
       dispatch({
         type: ChromeperfApp.reducers.advanceAlertGroup.name,
@@ -385,10 +380,8 @@ tr.exportTo('cp', () => {
 
     bisectGroup: (statePath) => async (dispatch, getState) => {
       const state = Polymer.Path.get(getState(), statePath);
-      const alertGroupIndex = state.alertGroupIndex;
       const alertGroups = state.alertGroups;
-      const alerts = alertGroups[alertGroupIndex]
-      const alertKeys = alerts.map(a => a.key)
+      const alerts = alertGroups[0].map(cp.AlertsSection.transformAlert);
 
       const triageNew = new cp.TriageNew();
       console.log(triageNew);
@@ -396,19 +389,18 @@ tr.exportTo('cp', () => {
       let userEmail = getState().userEmail;
 
       console.log("User email is " + userEmail);
+
       if (window.IS_DEBUG) {
         userEmail = 'you@chromium.org';
-        console.log("DEBUG");
       }
       if (!userEmail) {
         console.log("no user email");
         return;
       }
 
-      console.log("Pre new bug");
-
       const newBug = {
         cc: userEmail,
+        alertKeys: alerts.map(a => a.key),
         components: cp.TriageNew.collectComponents(alerts),
         description: '',
 /*        isOpen: {
@@ -422,33 +414,23 @@ tr.exportTo('cp', () => {
 
       console.log("new bug stuff");
       console.log(newBug);
-      return;
 
-      const request = new NewBugRequest({
-        alertKeys,
-        ...state.newBug,
-        labels: state.newBug.labels.filter(
+      const request = new NewBugRequest({...newBug});
+/*        labels: state.newBug.labels.filter(
           x => x.isEnabled).map(x => x.name),
         components: state.newBug.components.filter(
           x => x.isEnabled).map(x => x.name),
-      });
-      const summary = state.newBug.summary;
-      bugId = await request.response;
+      });*/
+
 /*      dispatch({
         type: AlertsSection.reducers.showTriagedNew.name,
         statePath,
         bugId,
-        summary,
+        newBug.summary,
       });*/
 
 //      triageNew.buildState({isOpen: true, alerts, userEmail});
 
-      // -2 might be the magic word to ignore alerts?
-/*      const request = new ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
-      await request.response;
-      console.log(request.response);
-      console.log(request);
-*/
       // TODO - remove group from list.
 
       dispatch({
@@ -456,6 +438,8 @@ tr.exportTo('cp', () => {
         statePath
       });
       dispatch("displayCurrentAlertGroup", statePath);
+      const bugId = await request.response;
+      console.log("BUG ID " + bugId);
     },
 
     reportSectionShowing: (statePath, showingReportSection) =>
@@ -759,11 +743,12 @@ tr.exportTo('cp', () => {
     },
 
     advanceAlertGroup(state, action, rootState) {
+
       console.log("STATE IS");
       console.log(state);
       return {
         ...state,
-        alertGroupIndex: (state.alertGroupIndex + 1) % state.alertGroups.length,
+        alertGroups: state.alertGroups.slice(1, state.alertGroups.length),
       }
     },
 

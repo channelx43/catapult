@@ -116,6 +116,16 @@ found in the LICENSE file.
     <app-route route="{{route}}"></app-route>
     <app-location route="{{route}}" use-hash-as-path></app-location>
 
+    <google-signin
+        id="signin"
+        client-id="[[clientId]]"
+        height="short"
+        theme="dark"
+        scopes="email"
+        on-google-signin-success="onSignin_"
+        on-google-signed-out="onSignout_">
+    </google-signin>
+
     <template is="dom-repeat" items="[[chartSectionIds]]" as="id" index-as="idIndex">
       <chart-section
           state-path="[[statePath]].chartSectionsById.[[id]]"
