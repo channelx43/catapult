@@ -237,7 +237,11 @@ tr.exportTo('cp', () => {
 
 
         document.addEventListener("keydown", (e) => {
-          dispatch("ignoreGroup");
+          switch (e.key) {
+          case "i":
+            dispatch("ignoreGroup");
+            break;
+          }
         });
 
         dispatch("displayNextAlertGroup", statePath);
@@ -271,7 +275,13 @@ tr.exportTo('cp', () => {
 
       let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
 
-      let alreadyTriaged = alerts.filter(alert => alert.bug_id !== undefined)
+      let alreadyTriaged = alerts.filter(alert => alert.bug_id !== undefined);
+      if (alreadyTriaged.length != 0) {
+        console.log("already triaged");
+      }
+
+
+//      dispatch(Redux.UPDATE(statePath, {alertGroups, alertGroupIndex: 0}));
 
       let alertGroup = alertGroups[0];
       let actions = [];
@@ -295,7 +305,6 @@ tr.exportTo('cp', () => {
     },
 
     ignoreGroup: () => async (dispatch, getState) => {
-
       console.log("ignoring group");
     },
 
