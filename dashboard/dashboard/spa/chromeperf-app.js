@@ -53,6 +53,20 @@ tr.exportTo('cp', () => {
     }
   }
 
+  class ExistingBugRequest extends cp.RequestBase {
+    constructor(options) {
+      super(options);
+      this.method_ = 'POST';
+      this.body_ = new FormData();
+      for (const key of options.alertKeys) this.body_.append('key', key);
+      this.body_.set('bug_id', options.bugId);
+    }
+
+    get url_() {
+      return '/api/alerts/existing_bug';
+    }
+  }
+
   class ChromeperfApp extends cp.ElementBase {
     get clientId() {
       return CLIENT_ID;
@@ -319,6 +333,15 @@ tr.exportTo('cp', () => {
     ignoreGroup: (statePath) => async (dispatch, getState) => {
       const state = Polymer.Path.get(getState(), statePath);
       const alertGroupIndex = state.alertGroupIndex;
+      const alertGroups = state.alertGroups;
+      const alertKeys = alertGroups[alertGroupIndex].map(a => a.key)
+
+      // -2 might be the magic word to ignore alerts?
+      const request = new ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
+      await request.response;
+      console.log(request.response);
+
+      // TODO - remove group from list.
 
       dispatch({
         type: ChromeperfApp.reducers.advanceAlertGroup.name,
