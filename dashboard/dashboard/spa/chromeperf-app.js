@@ -286,6 +286,7 @@ tr.exportTo('cp', () => {
     },
 
     displayCurrentAlertGroup: (statePath) => async (dispatch, getState) => {
+      console.log("State path is " + statePath);
       dispatch("closeAllCharts", statePath)
 
       const state = Polymer.Path.get(getState(), statePath);
@@ -296,6 +297,7 @@ tr.exportTo('cp', () => {
 
       let alertGroup = alertGroups[alertGroupIndex];
       for (let alert of alertGroup) {
+        console.log(alert.descriptor.testSuite);
         dispatch(
           'newChart',
           statePath,
@@ -318,7 +320,10 @@ tr.exportTo('cp', () => {
       const state = Polymer.Path.get(getState(), statePath);
       const alertGroupIndex = state.alertGroupIndex;
 
-      dispatch(Redux.UPDATE(statePath, {alertGroupIndex: state.alertGroupIndex + 1}));
+      dispatch({
+        type: ChromeperfApp.reducers.advanceAlertGroup.name,
+        statePath
+      });
       dispatch("displayCurrentAlertGroup", statePath);
     },
 
@@ -622,6 +627,15 @@ tr.exportTo('cp', () => {
       };
     },
 
+    advanceAlertGroup(state, action, rootState) {
+      console.log("STATE IS");
+      console.log(state);
+      return {
+        ...state,
+        alertGroupIndex: (state.alertGroupIndex + 1) % state.alertGroups.length,
+      }
+    },
+
     newAlerts: (state, {sectionId, options}, rootState) => {
       for (const alerts of Object.values(state.alertsSectionsById)) {
         // If the user mashes the ALERTS button, don't open copies of the same
@@ -733,6 +747,7 @@ tr.exportTo('cp', () => {
       return {
         ...state,
         chartSectionIds: [],
+        chartSectionsById: {},
         closedChartIds: Array.from(state.chartSectionIds),
       };
     },
