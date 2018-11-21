@@ -239,13 +239,13 @@ tr.exportTo('cp', () => {
         document.addEventListener("keydown", (e) => {
           switch (e.key) {
           case "i":
-            dispatch("ignoreGroup");
+            dispatch("ignoreGroup", statePath);
             break;
           }
         });
 
-        dispatch("displayNextAlertGroup", statePath);
-//        await ChromeperfApp.actions.displayNextAlertGroup(statePath)(dispatch, getState);
+        dispatch("fetchAlertGroups", statePath);
+//        await ChromeperfApp.actions.fetchAlertGroups(statePath)(dispatch, getState);
 
         // The app is done loading.
         dispatch(Redux.UPDATE(statePath, {
@@ -259,7 +259,7 @@ tr.exportTo('cp', () => {
         }
       },
 
-    displayNextAlertGroup:(statePath) => async (dispatch, getState) => {
+    fetchAlertGroups:(statePath) => async (dispatch, getState) => {
       // Queries dashboard/dashboard/api/alerts.py.
       // UnpriviledgedPost.
       const request = new cp.AlertsRequest({ body: {
@@ -281,11 +281,20 @@ tr.exportTo('cp', () => {
       }
 
 
-//      dispatch(Redux.UPDATE(statePath, {alertGroups, alertGroupIndex: 0}));
+      dispatch(Redux.UPDATE(statePath, {alertGroups, alertGroupIndex: 0}));
+      dispatch("displayCurrentAlertGroup", statePath);
+    },
 
-      let alertGroup = alertGroups[0];
-      let actions = [];
-      // TODO - could await here?
+    displayCurrentAlertGroup: (statePath) => async (dispatch, getState) => {
+      dispatch("closeAllCharts", statePath)
+
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroups = state.alertGroups;
+      const alertGroupIndex = state.alertGroupIndex;
+      console.log(alertGroups);
+      console.log(alertGroupIndex);
+
+      let alertGroup = alertGroups[alertGroupIndex];
       for (let alert of alertGroup) {
         dispatch(
           'newChart',
@@ -302,10 +311,15 @@ tr.exportTo('cp', () => {
             }
           });
       }
+
     },
 
-    ignoreGroup: () => async (dispatch, getState) => {
-      console.log("ignoring group");
+    ignoreGroup: (statePath) => async (dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroupIndex = state.alertGroupIndex;
+
+      dispatch(Redux.UPDATE(statePath, {alertGroupIndex: state.alertGroupIndex + 1}));
+      dispatch("displayCurrentAlertGroup", statePath);
     },
 
     reportSectionShowing: (statePath, showingReportSection) =>
