@@ -255,6 +255,9 @@ tr.exportTo('cp', () => {
           case "i":
             dispatch("ignoreGroup", statePath);
             break;
+          case "b":
+            dispatch("bisectGroup", statePath);
+            break;
           }
         });
 
@@ -340,7 +343,29 @@ tr.exportTo('cp', () => {
       const request = new ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
       await request.response;
       console.log(request.response);
+      console.log(request);
 
+      // TODO - remove group from list.
+
+      dispatch({
+        type: ChromeperfApp.reducers.advanceAlertGroup.name,
+        statePath
+      });
+      dispatch("displayCurrentAlertGroup", statePath);
+    },
+
+    bisectGroup: (statePath) => async (dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroupIndex = state.alertGroupIndex;
+      const alertGroups = state.alertGroups;
+      const alertKeys = alertGroups[alertGroupIndex].map(a => a.key)
+
+      // -2 might be the magic word to ignore alerts?
+/*      const request = new ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
+      await request.response;
+      console.log(request.response);
+      console.log(request);
+*/
       // TODO - remove group from list.
 
       dispatch({
