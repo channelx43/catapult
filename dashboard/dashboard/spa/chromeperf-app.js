@@ -240,7 +240,8 @@ tr.exportTo('cp', () => {
           dispatch("ignoreGroup");
         });
 
-        await dispatch("displayNextAlertGroup", statePath);
+        dispatch("displayNextAlertGroup", statePath);
+//        await ChromeperfApp.actions.displayNextAlertGroup(statePath)(dispatch, getState);
 
         // The app is done loading.
         dispatch(Redux.UPDATE(statePath, {
