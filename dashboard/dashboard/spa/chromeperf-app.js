@@ -153,42 +153,6 @@ tr.exportTo('cp', () => {
       return userEmail.endsWith('@google.com');
     }
 
-    static async displayNextAlertGroup_ (statePath, dispatch, getState) {
-      // Queries dashboard/dashboard/api/alerts.py.
-      // UnpriviledgedPost.
-      const request = new cp.AlertsRequest({ body: {
-        sheriff: "Chromium Perf Sheriff",
-        triaged: false,
-        is_improvement: false,
-        bug_id: '',
-        limit: 50,
-      }});
-
-      console.log("About to start request");
-      const response = await request.response;
-      const alerts = response.anomalies;
-
-      let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
-
-      let alreadyTriaged = alerts.filter(alert => alert.bug_id !== undefined)
-
-      let alertGroup = alertGroups[0];
-      for (let alert of alertGroup) {
-        ChromeperfApp.actions.newChart(
-          statePath, {
-            "maxRevision":9900,
-            "parameters":{
-              "testSuites":[alert.descriptor.testSuite],
-              "measurements":[alert.descriptor.measurement],
-              "bots":[alert.descriptor.bot],
-              "testCases":[alert.descriptor.testCase],
-              "statistic":alert.descriptor.statistic,
-            }
-          }
-        )(dispatch, getState);
-      }
-    }
-
     get isProduction() {
       return window.IS_PRODUCTION;
     }
@@ -281,10 +245,11 @@ tr.exportTo('cp', () => {
 
 
         document.addEventListener("keydown", (e) => {
+//          a
           ChromeperfApp.onHotkey(e);
         });
 
-        await ChromeperfApp.displayNextAlertGroup_(statePath, dispatch, getState);
+        await dispatch("displayNextAlertGroup", statePath);
 
         // The app is done loading.
         dispatch(Redux.UPDATE(statePath, {
@@ -297,6 +262,59 @@ tr.exportTo('cp', () => {
           cp.ChromeperfApp.actions.getRecentBugs()(dispatch, getState);
         }
       },
+
+    displayNextAlertGroup:(statePath, dispatch, getState) => async (dispatch, getState) => {
+      // Queries dashboard/dashboard/api/alerts.py.
+      // UnpriviledgedPost.
+      const request = new cp.AlertsRequest({ body: {
+        sheriff: "Chromium Perf Sheriff",
+        triaged: false,
+        is_improvement: false,
+        bug_id: '',
+        limit: 50,
+      }});
+
+      const response = await request.response;
+      const alerts = response.anomalies;
+
+      let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
+
+      let alreadyTriaged = alerts.filter(alert => alert.bug_id !== undefined)
+
+      let alertGroup = alertGroups[0];
+      let actions = [];
+      // TODO - could await here?
+/*      for (let alert of alertGroup) {
+        await dispatch(
+          'newChart',
+          statePath,
+          {
+            "maxRevision":9900,
+            "parameters":{
+              "testSuites":[alert.descriptor.testSuite],
+              "measurements":[alert.descriptor.measurement],
+              "bots":[alert.descriptor.bot],
+              "testCases":[alert.descriptor.testCase],
+              "statistic":alert.descriptor.statistic,
+            }
+          });
+          }*/
+
+      for (let alert of alertGroup) {
+        ChromeperfApp.actions.newChart(
+          statePath, {
+            "maxRevision":9900,
+            "parameters":{
+              "testSuites":[alert.descriptor.testSuite],
+              "measurements":[alert.descriptor.measurement],
+              "bots":[alert.descriptor.bot],
+              "testCases":[alert.descriptor.testCase],
+              "statistic":alert.descriptor.statistic,
+            }
+          }
+        )(dispatch, getState);
+      }
+    },
 
     reportSectionShowing: (statePath, showingReportSection) =>
       async(dispatch, getState) => {
