@@ -284,8 +284,8 @@ tr.exportTo('cp', () => {
       let alertGroup = alertGroups[0];
       let actions = [];
       // TODO - could await here?
-/*      for (let alert of alertGroup) {
-        await dispatch(
+      for (let alert of alertGroup) {
+        dispatch(
           'newChart',
           statePath,
           {
@@ -298,21 +298,6 @@ tr.exportTo('cp', () => {
               "statistic":alert.descriptor.statistic,
             }
           });
-          }*/
-
-      for (let alert of alertGroup) {
-        ChromeperfApp.actions.newChart(
-          statePath, {
-            "maxRevision":9900,
-            "parameters":{
-              "testSuites":[alert.descriptor.testSuite],
-              "measurements":[alert.descriptor.measurement],
-              "bots":[alert.descriptor.bot],
-              "testCases":[alert.descriptor.testCase],
-              "statistic":alert.descriptor.statistic,
-            }
-          }
-        )(dispatch, getState);
       }
     },
 
