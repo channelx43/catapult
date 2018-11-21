@@ -196,6 +196,14 @@ tr.exportTo('cp', () => {
     onReset_(event) {
       this.dispatch('reset', this.statePath);
     }
+
+    static onHotkey(e) {
+      switch(e.key) {
+      case "i":
+        console.log("hit i");
+        break;
+      }
+    }
   }
 
   ChromeperfApp.State = {
@@ -271,10 +279,12 @@ tr.exportTo('cp', () => {
         await ChromeperfApp.actions.restoreFromRoute(
           statePath, routeParams)(dispatch, getState);
 
-        await ChromeperfApp.displayNextAlertGroup_(statePath, dispatch, getState);
 
-//        await(dispatch({
-//          type:
+        document.addEventListener("keydown", (e) => {
+          ChromeperfApp.onHotkey(e);
+        });
+
+        await ChromeperfApp.displayNextAlertGroup_(statePath, dispatch, getState);
 
         // The app is done loading.
         dispatch(Redux.UPDATE(statePath, {
