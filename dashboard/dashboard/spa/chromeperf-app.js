@@ -306,8 +306,8 @@ tr.exportTo('cp', () => {
         is_improvement: false,
         bug_id: '',
         limit: 50,
-        max_start_revision: max_revision,
-        min_end_revision: min_revision,
+/*        max_start_revision: max_revision,
+        min_end_revision: min_revision,*/
       }});
 
       const mergeablesResponse = await mergeablesRequest.response;
@@ -315,8 +315,11 @@ tr.exportTo('cp', () => {
       console.log(mergeablesAlerts);
 
       // Filter out alerts included in the first group, only show first 4.
-      const alertGroupMergeables = mergeablesAlerts.filter(x => d.shouldMerge(x, currentAlertGroup[0])).slice(0, 4);
+      const alertGroupMergeables = mergeablesAlerts.filter(x => !d.shouldMerge(x, currentAlertGroup[0])).slice(0, 4);
       dispatch(Redux.UPDATE(statePath, {alertGroupMergeables}));
+
+      console.log("After filtering");
+      console.log(alertGroupMergeables);
 
       dispatch("displayCurrentAlertGroupMergeables", statePath);
     },
@@ -353,6 +356,9 @@ tr.exportTo('cp', () => {
     displayCurrentAlertGroupMergeables: (statePath) => async (dispatch, getState) => {
       const state = Polymer.Path.get(getState(), statePath);
       const alerts = state.alertGroupMergeables;
+
+      console.log("Displaying alerts for");
+      console.log(alerts);
 
       for (let alert of alerts) {
         dispatch(
@@ -855,7 +861,9 @@ tr.exportTo('cp', () => {
       return {
         ...state,
         chartSectionIds: [],
+        mergeableChartSectionIds: [],
         chartSectionsById: {},
+        mergeableChartSectionsById: {},
         closedChartIds: Array.from(state.chartSectionIds),
       };
     },
