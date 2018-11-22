@@ -253,7 +253,6 @@ tr.exportTo('cp', () => {
         });
 
         dispatch("fetchAlertGroups", statePath);
-//        await ChromeperfApp.actions.fetchAlertGroups(statePath)(dispatch, getState);
 
         // The app is done loading.
         dispatch(Redux.UPDATE(statePath, {
@@ -289,7 +288,10 @@ tr.exportTo('cp', () => {
 
       dispatch(Redux.UPDATE(statePath, {alertGroups}));
       dispatch("displayCurrentAlertGroup", statePath);
-
+    },
+    fetchAlertGroupMergeables: (statePath) => async(dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroups = state.alertGroups;
       if (alertGroups.length == 0) {
         console.log("No alert groups");
         return;
@@ -364,6 +366,7 @@ tr.exportTo('cp', () => {
             }
           });
       }
+      dispatch("fetchAlertGroupMergeables", statePath);
     },
 
     displayCurrentAlertGroupMergeables: (statePath) => async (dispatch, getState) => {
