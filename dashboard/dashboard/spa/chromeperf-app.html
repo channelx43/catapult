@@ -77,6 +77,21 @@ found in the LICENSE file.
         border-bottom: 1px solid var(--primary-color-medium);
       }
 
+      chart-section {
+        /* Use full-bleed dividers between sections.
+           https://material.io/guidelines/components/dividers.html
+         */
+        border-bottom: 1px solid var(--primary-color-medium);
+      }
+
+      #main-charts, #mergeable-charts {
+        width:50%;
+      }
+
+      #main-charts {
+        float: left;
+      }
+
       .buttons {
         display: flex;
         justify-content: space-evenly;
@@ -126,15 +141,26 @@ found in the LICENSE file.
         on-google-signed-out="onSignout_">
     </google-signin>
 
-    <template is="dom-repeat" items="[[chartSectionIds]]" as="id" index-as="idIndex">
-      <chart-section
+    <div id="main-charts">
+      <template is="dom-repeat" items="[[chartSectionIds]]" as="id" index-as="idIndex">
+        <chart-section
           state-path="[[statePath]].chartSectionsById.[[id]]"
           linked-state-path="[[statePath]].linkedChartState"
           on-require-sign-in="requireSignIn_"
           on-new-chart="onNewChart_"
           on-close-section="onCloseChart_">
-      </chart-section>
-    </template>
+        </chart-section>
+      </template>
+    </div>
+
+    <div id="mergeable-charts">
+      <template is="dom-repeat" items="[[mergeableChartSectionIds]]" as="id" index-as="idIndex">
+        <chart-section
+          state-path="[[statePath]].mergeableChartSectionsById.[[id]]"
+          linked-state-path="[[statePath]].linkedChartState">
+        </chart-section>
+      </template>
+    </div>
   </template>
 </dom-module>
 <script src="/dashboard/spa/chromeperf-app.js"></script>

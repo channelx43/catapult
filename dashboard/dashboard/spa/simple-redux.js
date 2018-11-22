@@ -14,7 +14,7 @@
   const REDUCERS = new Map();
 
   function rootReducer(state, action) {
-    console.log(action);
+//    console.log(action);
     if (state === undefined) state = {};
     const reducer = REDUCERS.get(action.type);
     if (reducer == undefined) console.log("NO REDUCER");

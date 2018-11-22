@@ -175,6 +175,8 @@ tr.exportTo('cp', () => {
     alertsSectionsById: options => {return {};},
     chartSectionIds: options => [],
     chartSectionsById: options => {return {};},
+    mergeableChartSectionIds: options => [],
+    mergeableChartSectionsById: options => {return {};},
     closedAlertsIds: options => undefined,
     closedChartIds: options => undefined,
     // App-route sets |route|, and redux sets |reduxRoutePath|.
@@ -316,6 +318,24 @@ tr.exportTo('cp', () => {
           });
       }
 
+      // TODO - add charts for mergeables.
+      for (let alert of alertGroup) {
+        dispatch(
+          'newChart',
+          statePath,
+          {
+            "minRevision":undefined,
+            "maxRevision":undefined,
+            "mergeable": true,
+            "parameters":{
+              "testSuites":[alert.descriptor.testSuite],
+              "measurements":[alert.descriptor.measurement],
+              "bots":[alert.descriptor.bot],
+              "testCases":[alert.descriptor.testCase],
+              "statistic":alert.descriptor.statistic,
+            }
+          });
+      }
     },
 
     ignoreGroup: (statePath) => async (dispatch, getState) => {
@@ -707,7 +727,16 @@ tr.exportTo('cp', () => {
     },
 
     newChart: (state, action, rootState) => {
-      for (const chart of Object.values(state.chartSectionsById)) {
+      console.log("newChart");
+      let currentChartSectionIdsKey = "chartSectionIds";
+      let currentChartSectionsByIdKey = "chartSectionsById";
+      if (action.options && action.options.mergeable) {
+        console.log("mergeable");
+        currentChartSectionIdsKey = "mergeableChartSectionIds";
+        currentChartSectionsByIdKey = "mergeableChartSectionsById";
+      }
+
+      for (const chart of Object.values(state[currentChartSectionsByIdKey])) {
         // If the user mashes the OPEN CHART button in the alerts-section, for
         // example, don't open multiple copies of the same chart.
         if ((action.options && action.options.clone) ||
@@ -715,13 +744,17 @@ tr.exportTo('cp', () => {
           continue;
         }
         // TODO scroll to the matching chart.
-        if (state.chartSectionIds.includes(chart.sectionId)) return state;
+        if (state[currentChartSectionIdsKey].includes(chart.sectionId)) {
+          console.log("BAIL");
+          return state;
+        }
+        console.log("BAIL");
         return {
           ...state,
           closedChartIds: undefined,
-          chartSectionIds: [
+          currentChartSectionIdsKey: [
             chart.sectionId,
-            ...state.chartSectionIds,
+            ...state[currentChartSectionIdsKey],
           ],
         };
       }
@@ -732,11 +765,13 @@ tr.exportTo('cp', () => {
         sectionId,
         ...cp.ChartSection.buildState(action.options || {}),
       };
-      const chartSectionsById = {...state.chartSectionsById};
+      const chartSectionsById = {...state[currentChartSectionsByIdKey]};
       chartSectionsById[sectionId] = newSection;
-      state = {...state, chartSectionsById};
+      console.log("Chart sections by id")
+      console.log(chartSectionsById);
+      state = {...state, [currentChartSectionsByIdKey]: chartSectionsById};
 
-      const chartSectionIds = Array.from(state.chartSectionIds);
+      const chartSectionIds = Array.from(state[currentChartSectionIdsKey]);
       chartSectionIds.push(sectionId);
 
       if (chartSectionIds.length === 1 && action.options) {
@@ -744,7 +779,9 @@ tr.exportTo('cp', () => {
             cp.ChartPair.LinkedState, action.options);
         state = {...state, linkedChartState};
       }
-      return {...state, chartSectionIds};
+
+      console.log({...state, currentChartSectionIdsKey: chartSectionIds});
+      return {...state, [currentChartSectionIdsKey]: chartSectionIds};
     },
 
     closeAlerts: (state, action, rootState) => {
