@@ -285,8 +285,25 @@ tr.exportTo('cp', () => {
       if (mergeIndex > alertGroupMergeables.length)
         return;
 
+
       console.log("Would merge with");
       console.log(alertGroupMergeables[mergeIndex]);
+
+      const alertGroups = state.alertGroups;
+      const alertKeys = alertGroups[0].map(a => a.key)
+      const bugId = alertGroupMergeables[mergeIndex].bug_id;
+
+      const request = new cp.ExistingBugRequest({alertKeys: alertKeys, bugId});
+      await request.response;
+
+      console.log("merged with " + bugId);
+
+      dispatch({
+        type: ChromeperfApp.reducers.advanceAlertGroup.name,
+        statePath,
+      });
+      dispatch("displayCurrentAlertGroup", statePath);
+
     },
 
     fetchAlertGroups:(statePath) => async (dispatch, getState) => {
@@ -304,7 +321,7 @@ tr.exportTo('cp', () => {
       let alerts = response.anomalies;
 
       // This should be empty???
-      let alreadyTriaged = alerts.filter(alert => alert.bug_id != null);
+      let alreadyTriaged = alerts.filter(alert => alert.bug_id != null || alert.bug_id < 0);
 
       alerts = alerts.filter(alert => alert.bug_id == null);
       let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
@@ -342,11 +359,11 @@ tr.exportTo('cp', () => {
       const mergeablesResponse = await mergeablesRequest.response;
       let alertGroupMergeables = mergeablesResponse.anomalies;
 
-      let untriaged = alertGroupMergeables.filter(alert => alert.bug_id == null);
-      console.log("Shouldn't be any untriaged");
+      let untriaged = alertGroupMergeables.filter(alert => alert.bug_id == null || alert.bug_id < 0);
+      console.log("Shouldn't be any untriaged or ignored");
       console.log(untriaged);
 
-      alertGroupMergeables = alertGroupMergeables.filter(alert => alert.bug_id != null);
+      alertGroupMergeables = alertGroupMergeables.filter(alert => alert.bug_id != null && alert.bug_id >= 0);
       console.log("Triaged:")
       console.log(alertGroupMergeables);
 
