@@ -276,20 +276,22 @@ tr.exportTo('cp', () => {
       }});
 
       const response = await request.response;
-      const alerts = response.anomalies;
+      let alerts = response.anomalies;
+
+      // This should be empty???
+      let alreadyTriaged = alerts.filter(alert => alert.bug_id !== undefined);
+
+      alerts = alerts.filter(alert => alert.bug_id === undefined);
 
       let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
-
-      let alreadyTriaged = alerts.filter(alert => alert.bug_id !== undefined);
-      if (alreadyTriaged.length != 0) {
-        console.log("already triaged");
-      }
 
       dispatch(Redux.UPDATE(statePath, {alertGroups}));
       dispatch("displayCurrentAlertGroup", statePath);
 
       if (alertGroups.length == 0)
         return;
+
+      console.log("Getting mergy things");
 
       const currentAlertGroup = alertGroups[0];
       let min_revision = Number.MAX_SAFE_INTEGER;
@@ -304,18 +306,22 @@ tr.exportTo('cp', () => {
         sheriff: "Chromium Perf Sheriff",
         triaged: true,
         is_improvement: false,
-        bug_id: '',
         limit: 50,
-/*        max_start_revision: max_revision,
-        min_end_revision: min_revision,*/
+        max_start_revision: max_revision,
+        min_end_revision: min_revision,
       }});
 
       const mergeablesResponse = await mergeablesRequest.response;
-      const mergeablesAlerts = mergeablesResponse.anomalies;
-      console.log(mergeablesAlerts);
+      let alertGroupMergeables = mergeablesResponse.anomalies;
 
-      // Filter out alerts included in the first group, only show first 4.
-      const alertGroupMergeables = mergeablesAlerts.filter(x => !d.shouldMerge(x, currentAlertGroup[0])).slice(0, 4);
+      let untriaged = alertGroupMergeables.filter(alert => alert.bug_id === undefined);
+      console.log("Shouldn't be any untriaged");
+      console.log(untriaged);
+
+      alertGroupMergeables = alertGroupMergeables.filter(alert => alert.bug_id !== undefined);
+
+      // Group the already triaged alerts, and take the first alert from each group, up to the first 4.
+      alertGroupMergeables = d.groupAlerts(alertGroupMergeables, false).map((alertGroup) => alertGroup[0]).slice(0, 4);
       dispatch(Redux.UPDATE(statePath, {alertGroupMergeables}));
 
       console.log("After filtering");
