@@ -172,7 +172,7 @@ found in the LICENSE file.
       <div id="mergeable-charts">
         <template is="dom-repeat" items="[[mergeableChartSectionIds]]" as="id" index-as="idIndex">
           <div class="mergeable">
-            <div class="mergekey">B</div>
+            <div class="mergekey">[[mergeHotkeyGetter(idIndex)]]</div>
             <chart-section
               state-path="[[statePath]].mergeableChartSectionsById.[[id]]"
               linked-state-path="[[statePath]].linkedChartState">

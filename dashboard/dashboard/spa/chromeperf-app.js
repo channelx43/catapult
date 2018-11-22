@@ -53,7 +53,13 @@ tr.exportTo('cp', () => {
     }
   }
 
+  const MERGE_HOTKEYS = ["j", "k", "l", ";"];
+
   class ChromeperfApp extends cp.ElementBase {
+    mergeHotkeyGetter(id) {
+      return MERGE_HOTKEYS[id];
+    }
+
     get clientId() {
       return CLIENT_ID;
     }
@@ -250,6 +256,10 @@ tr.exportTo('cp', () => {
             dispatch("skipForDebug", statePath);
             break;
           }
+          const mergeIndex = MERGE_HOTKEYS.indexOf(e.key);
+          if (mergeIndex >= 0) {
+            dispatch("mergeWithAlertWithIndex", statePath, mergeIndex);
+          }
         });
 
         dispatch("fetchAlertGroups", statePath);
@@ -265,6 +275,19 @@ tr.exportTo('cp', () => {
           cp.ChromeperfApp.actions.getRecentBugs()(dispatch, getState);
         }
       },
+
+    mergeWithAlertWithIndex:(statePath, mergeIndex) => async (dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroupMergeables = state.alertGroupMergeables;
+      console.log(alertGroupMergeables);
+      console.log(mergeIndex);
+
+      if (mergeIndex > alertGroupMergeables.length)
+        return;
+
+      console.log("Would merge with");
+      console.log(alertGroupMergeables[mergeIndex]);
+    },
 
     fetchAlertGroups:(statePath) => async (dispatch, getState) => {
       // Queries dashboard/dashboard/api/alerts.py.
