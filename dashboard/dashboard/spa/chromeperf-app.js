@@ -285,9 +285,41 @@ tr.exportTo('cp', () => {
         console.log("already triaged");
       }
 
-
       dispatch(Redux.UPDATE(statePath, {alertGroups}));
       dispatch("displayCurrentAlertGroup", statePath);
+
+      if (alertGroups.length == 0)
+        return;
+
+      const currentAlertGroup = alertGroups[0];
+      let min_revision = Number.MAX_SAFE_INTEGER;
+      let max_revision = 0;
+      for (const alert of currentAlertGroup) {
+        min_revision = Math.min(min_revision, alert.start_revision);
+        max_revision = Math.max(max_revision, alert.end_revision);
+      }
+
+      // Fetch merged.
+      const mergeablesRequest = new cp.AlertsRequest({ body: {
+        sheriff: "Chromium Perf Sheriff",
+        triaged: true,
+        is_improvement: false,
+        bug_id: '',
+        limit: 50,
+        max_start_revision: max_revision,
+        min_end_revision: min_revision,
+      }});
+
+      const mergeablesResponse = await mergeablesRequest.response;
+      const mergeablesAlerts = mergeablesResponse.anomalies;
+      console.log(mergeablesAlerts);
+
+      // TODO - truncate to 4, filter out dups.
+      //      let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
+      const alertGroupMergeables = mergeablesAlerts;
+      dispatch(Redux.UPDATE(statePath, {alertGroupMergeables}));
+
+      dispatch("displayCurrentAlertGroupMergeables", statePath);
     },
 
     displayCurrentAlertGroup: (statePath) => async (dispatch, getState) => {
@@ -317,9 +349,13 @@ tr.exportTo('cp', () => {
             }
           });
       }
+    },
 
-      // TODO - add charts for mergeables.
-      for (let alert of alertGroup) {
+    displayCurrentAlertGroupMergeables: (statePath) => async (dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alerts = state.alertGroupMergeables;
+
+      for (let alert of alerts) {
         dispatch(
           'newChart',
           statePath,
@@ -727,11 +763,9 @@ tr.exportTo('cp', () => {
     },
 
     newChart: (state, action, rootState) => {
-      console.log("newChart");
       let currentChartSectionIdsKey = "chartSectionIds";
       let currentChartSectionsByIdKey = "chartSectionsById";
       if (action.options && action.options.mergeable) {
-        console.log("mergeable");
         currentChartSectionIdsKey = "mergeableChartSectionIds";
         currentChartSectionsByIdKey = "mergeableChartSectionsById";
       }
@@ -745,10 +779,8 @@ tr.exportTo('cp', () => {
         }
         // TODO scroll to the matching chart.
         if (state[currentChartSectionIdsKey].includes(chart.sectionId)) {
-          console.log("BAIL");
           return state;
         }
-        console.log("BAIL");
         return {
           ...state,
           closedChartIds: undefined,
@@ -767,8 +799,6 @@ tr.exportTo('cp', () => {
       };
       const chartSectionsById = {...state[currentChartSectionsByIdKey]};
       chartSectionsById[sectionId] = newSection;
-      console.log("Chart sections by id")
-      console.log(chartSectionsById);
       state = {...state, [currentChartSectionsByIdKey]: chartSectionsById};
 
       const chartSectionIds = Array.from(state[currentChartSectionIdsKey]);
@@ -780,7 +810,6 @@ tr.exportTo('cp', () => {
         state = {...state, linkedChartState};
       }
 
-      console.log({...state, currentChartSectionIdsKey: chartSectionIds});
       return {...state, [currentChartSectionIdsKey]: chartSectionIds};
     },
 
