@@ -53,49 +53,6 @@ tr.exportTo('cp', () => {
     }
   }
 
-  class ExistingBugRequest extends cp.RequestBase {
-    constructor(options) {
-      super(options);
-      this.method_ = 'POST';
-      this.body_ = new FormData();
-      for (const key of options.alertKeys) this.body_.append('key', key);
-      this.body_.set('bug_id', options.bugId);
-    }
-
-    get url_() {
-      return '/api/alerts/existing_bug';
-    }
-  }
-
-  class NewBugRequest extends cp.RequestBase {
-    constructor(options) {
-      super(options);
-      this.method_ = 'POST';
-      this.body_ = new FormData();
-      for (const key of options.alertKeys) this.body_.append('key', key);
-      for (const label of options.labels) this.body_.append('label', label);
-      for (const component of options.components) {
-        this.body_.append('component', component);
-      }
-      this.body_.set('summary', options.summary);
-      this.body_.set('description', options.description);
-      this.body_.set('owner', options.owner);
-      this.body_.set('cc', options.cc);
-    }
-
-    get url_() {
-      return '/api/alerts/new_bug';
-    }
-
-    async localhostResponse_() {
-      return {bug_id: 123450000 + tr.b.GUID.allocateSimple()};
-    }
-
-    postProcess_(json) {
-      return json.bug_id;
-    }
-  }
-
   class ChromeperfApp extends cp.ElementBase {
     get clientId() {
       return CLIENT_ID;
@@ -332,16 +289,17 @@ tr.exportTo('cp', () => {
     },
 
     displayCurrentAlertGroup: (statePath) => async (dispatch, getState) => {
-      console.log("State path is " + statePath);
       dispatch("closeAllCharts", statePath)
 
       const state = Polymer.Path.get(getState(), statePath);
       const alertGroups = state.alertGroups;
-      console.log(alertGroups);
+
+      // TODO - cats.
+      if (alertGroups.length == 0)
+        return;
 
       let alertGroup = alertGroups[0];
       for (let alert of alertGroup) {
-        console.log(alert.descriptor.testSuite);
         dispatch(
           'newChart',
           statePath,
@@ -366,10 +324,8 @@ tr.exportTo('cp', () => {
       const alertKeys = alertGroups[0].map(a => a.key)
 
       // -2 might be the magic word to ignore alerts?
-      const request = new ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
+      const request = new cp.ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
       await request.response;
-      console.log(request.response);
-      console.log(request);
 
       dispatch({
         type: ChromeperfApp.reducers.advanceAlertGroup.name,
@@ -384,11 +340,8 @@ tr.exportTo('cp', () => {
       const alerts = alertGroups[0].map(cp.AlertsSection.transformAlert);
 
       const triageNew = new cp.TriageNew();
-      console.log(triageNew);
 
       let userEmail = getState().userEmail;
-
-      console.log("User email is " + userEmail);
 
       if (window.IS_DEBUG) {
         userEmail = 'you@chromium.org';
@@ -403,35 +356,12 @@ tr.exportTo('cp', () => {
         alertKeys: alerts.map(a => a.key),
         components: cp.TriageNew.collectComponents(alerts),
         description: '',
-/*        isOpen: {
-          value: options => options.isOpen || false,
-          reflectToAttribute: true,
-        },*/
         labels: cp.TriageNew.collectLabels(alerts),
         owner: '',
         summary: cp.TriageNew.summarize(alerts),
       }
 
-      console.log("new bug stuff");
-      console.log(newBug);
-
-      const request = new NewBugRequest({...newBug});
-/*        labels: state.newBug.labels.filter(
-          x => x.isEnabled).map(x => x.name),
-        components: state.newBug.components.filter(
-          x => x.isEnabled).map(x => x.name),
-      });*/
-
-/*      dispatch({
-        type: AlertsSection.reducers.showTriagedNew.name,
-        statePath,
-        bugId,
-        newBug.summary,
-      });*/
-
-//      triageNew.buildState({isOpen: true, alerts, userEmail});
-
-      // TODO - remove group from list.
+      const request = new cp.NewBugRequest({...newBug});
 
       dispatch({
         type: ChromeperfApp.reducers.advanceAlertGroup.name,
@@ -743,9 +673,6 @@ tr.exportTo('cp', () => {
     },
 
     advanceAlertGroup(state, action, rootState) {
-
-      console.log("STATE IS");
-      console.log(state);
       return {
         ...state,
         alertGroups: state.alertGroups.slice(1, state.alertGroups.length),
