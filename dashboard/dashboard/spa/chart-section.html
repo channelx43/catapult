@@ -187,27 +187,6 @@ found in the LICENSE file.
           </cp-input>
         </iron-collapse>
       </div>
-
-      <span id="spacer">&nbsp;</span>
-
-      <expand-button
-          id="toggle_chart_only"
-          state-path="[[statePath]]">
-      </expand-button>
-
-      <iron-icon
-          id="copy"
-          icon="cp:copy"
-          title="Clone"
-          on-click="onCopy_">
-      </iron-icon>
-
-      <iron-icon
-          id="close"
-          icon="cp:close"
-          title="Close"
-          on-click="onClose_">
-      </iron-icon>
     </div>
 
     <cp-loading loading$="[[isLoading_(isLoading, minimapLayout, chartLayout)]]">
@@ -241,38 +220,6 @@ found in the LICENSE file.
       </pivot-table>
     </iron-collapse>
 
-    <template is="dom-if" if="[[!isEmpty_(relatedTabs)]]">
-      <iron-collapse id="related_tabs"
-                     opened="[[isExpanded]]">
-        <cp-tab-bar selected="[[selectedRelatedTabName]]">
-          <template is="dom-repeat" items="[[relatedTabs]]" as="tab" index-as="tabIndex">
-            <cp-tab name="[[tab.name]]" on-click="onRelatedTabTap_">
-              [[tab.name]]
-            </cp-tab>
-          </template>
-        </cp-tab-bar>
-
-        <template is="dom-repeat" items="[[relatedTabs]]" as="tab" index-as="tabIndex">
-          <iron-collapse
-              opened="[[isEqual_(tab.name, selectedRelatedTabName)]]"
-              class="related_tab">
-            <div class="sparkline_container">
-              <template is="dom-repeat" items="[[tab.renderedSparklines]]" as="sparkline" index-as="sparklineIndex">
-                <div
-                    class="sparkline_tile"
-                    empty$="[[isEmpty_(sparkline.layout.lines)]]"
-                    on-click="onSparklineTap_">
-                  <div class="sparkline_name">[[sparkline.name]]</div>
-                  <chart-timeseries
-                      state-path="[[statePath]].relatedTabs.[[tabIndex]].renderedSparklines.[[sparklineIndex]].layout">
-                  </chart-timeseries>
-                </div>
-              </template>
-            </div>
-          </iron-collapse>
-        </template>
-      </iron-collapse>
-    </template>
   </template>
 </dom-module>
 <script src="/dashboard/spa/chart-section.js"></script>

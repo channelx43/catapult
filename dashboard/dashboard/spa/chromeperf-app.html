@@ -74,18 +74,22 @@ found in the LICENSE file.
         /* Use full-bleed dividers between sections.
            https://material.io/guidelines/components/dividers.html
          */
-        border-bottom: 1px solid var(--primary-color-medium);
+/*        border-bottom: 1px solid var(--primary-color-medium);*/
       }
 
       chart-section {
         /* Use full-bleed dividers between sections.
            https://material.io/guidelines/components/dividers.html
          */
-        border-bottom: 1px solid var(--primary-color-medium);
+/*        border-bottom: 1px solid var(--primary-color-medium);*/
+      }
+
+      #charts-container {
+      display:flex;
       }
 
       #main-charts, #mergeable-charts {
-        width:50%;
+        flex:50%;
       }
 
       #main-charts {
@@ -141,25 +145,27 @@ found in the LICENSE file.
         on-google-signed-out="onSignout_">
     </google-signin>
 
-    <div id="main-charts">
-      <template is="dom-repeat" items="[[chartSectionIds]]" as="id" index-as="idIndex">
-        <chart-section
-          state-path="[[statePath]].chartSectionsById.[[id]]"
-          linked-state-path="[[statePath]].linkedChartState"
-          on-require-sign-in="requireSignIn_"
-          on-new-chart="onNewChart_"
-          on-close-section="onCloseChart_">
-        </chart-section>
-      </template>
-    </div>
+    <div id="charts-container">
+      <div id="main-charts">
+        <template is="dom-repeat" items="[[chartSectionIds]]" as="id" index-as="idIndex">
+          <chart-section
+            state-path="[[statePath]].chartSectionsById.[[id]]"
+            linked-state-path="[[statePath]].linkedChartState"
+            on-require-sign-in="requireSignIn_"
+            on-new-chart="onNewChart_"
+            on-close-section="onCloseChart_">
+          </chart-section>
+        </template>
+      </div>
 
-    <div id="mergeable-charts">
-      <template is="dom-repeat" items="[[mergeableChartSectionIds]]" as="id" index-as="idIndex">
-        <chart-section
-          state-path="[[statePath]].mergeableChartSectionsById.[[id]]"
-          linked-state-path="[[statePath]].linkedChartState">
-        </chart-section>
-      </template>
+      <div id="mergeable-charts">
+        <template is="dom-repeat" items="[[mergeableChartSectionIds]]" as="id" index-as="idIndex">
+          <chart-section
+            state-path="[[statePath]].mergeableChartSectionsById.[[id]]"
+            linked-state-path="[[statePath]].linkedChartState">
+          </chart-section>
+        </template>
+      </div>
     </div>
   </template>
 </dom-module>
