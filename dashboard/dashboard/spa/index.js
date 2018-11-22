@@ -36,7 +36,7 @@ ga('send', 'pageview');
 
 // Register the Service Worker when in production. Service Workers are not
 // helpful in development mode because all backend responses are being mocked.
-if ('serviceWorker' in navigator && !window.IS_DEBUG) {
+if (false && 'serviceWorker' in navigator && !window.IS_DEBUG) {
   const swChannel = new BroadcastChannel('service-worker');
   const analyticsClientIdPromise = new Promise(resolve => ga(tracker => resolve(
       tracker.get('clientId'))));
