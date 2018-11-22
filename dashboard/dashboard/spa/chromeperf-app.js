@@ -314,9 +314,8 @@ tr.exportTo('cp', () => {
       const mergeablesAlerts = mergeablesResponse.anomalies;
       console.log(mergeablesAlerts);
 
-      // TODO - truncate to 4, filter out dups.
-      //      let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
-      const alertGroupMergeables = mergeablesAlerts;
+      // Filter out alerts included in the first group, only show first 4.
+      const alertGroupMergeables = mergeablesAlerts.filter(x => d.shouldMerge(x, currentAlertGroup[0])).slice(0, 4);
       dispatch(Redux.UPDATE(statePath, {alertGroupMergeables}));
 
       dispatch("displayCurrentAlertGroupMergeables", statePath);
