@@ -246,6 +246,9 @@ tr.exportTo('cp', () => {
           case "b":
             dispatch("bisectGroup", statePath);
             break;
+          case "s":
+            dispatch("skipForDebug", statePath);
+            break;
           }
         });
 
@@ -279,18 +282,18 @@ tr.exportTo('cp', () => {
       let alerts = response.anomalies;
 
       // This should be empty???
-      let alreadyTriaged = alerts.filter(alert => alert.bug_id !== undefined);
+      let alreadyTriaged = alerts.filter(alert => alert.bug_id != null);
 
-      alerts = alerts.filter(alert => alert.bug_id === undefined);
-
+      alerts = alerts.filter(alert => alert.bug_id == null);
       let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
 
       dispatch(Redux.UPDATE(statePath, {alertGroups}));
       dispatch("displayCurrentAlertGroup", statePath);
 
-      if (alertGroups.length == 0)
+      if (alertGroups.length == 0) {
+        console.log("No alert groups");
         return;
-
+      }
       console.log("Getting mergy things");
 
       const currentAlertGroup = alertGroups[0];
@@ -314,11 +317,13 @@ tr.exportTo('cp', () => {
       const mergeablesResponse = await mergeablesRequest.response;
       let alertGroupMergeables = mergeablesResponse.anomalies;
 
-      let untriaged = alertGroupMergeables.filter(alert => alert.bug_id === undefined);
+      let untriaged = alertGroupMergeables.filter(alert => alert.bug_id == null);
       console.log("Shouldn't be any untriaged");
       console.log(untriaged);
 
-      alertGroupMergeables = alertGroupMergeables.filter(alert => alert.bug_id !== undefined);
+      alertGroupMergeables = alertGroupMergeables.filter(alert => alert.bug_id != null);
+      console.log("Triaged:")
+      console.log(alertGroupMergeables);
 
       // Group the already triaged alerts, and take the first alert from each group, up to the first 4.
       alertGroupMergeables = d.groupAlerts(alertGroupMergeables, false).map((alertGroup) => alertGroup[0]).slice(0, 4);
@@ -342,6 +347,8 @@ tr.exportTo('cp', () => {
 
       let alertGroup = alertGroups[0];
       for (let alert of alertGroup) {
+        console.log("new chart");
+        console.log(alert.descriptor);
         dispatch(
           'newChart',
           statePath,
@@ -396,7 +403,16 @@ tr.exportTo('cp', () => {
 
       dispatch({
         type: ChromeperfApp.reducers.advanceAlertGroup.name,
-        statePath
+        statePath,
+      });
+      dispatch("displayCurrentAlertGroup", statePath);
+    },
+
+    skipForDebug: (statePath) => async (dispatch, getState) => {
+      console.log("skipForDebug");
+      dispatch({
+        type: ChromeperfApp.reducers.advanceAlertGroup.name,
+        statePath,
       });
       dispatch("displayCurrentAlertGroup", statePath);
     },
@@ -740,6 +756,7 @@ tr.exportTo('cp', () => {
     },
 
     advanceAlertGroup(state, action, rootState) {
+      console.log("advancing");
       return {
         ...state,
         alertGroups: state.alertGroups.slice(1, state.alertGroups.length),
