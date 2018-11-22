@@ -89,7 +89,18 @@ found in the LICENSE file.
       }
 
       #main-charts, #mergeable-charts {
-        flex:50%;
+        flex:47%;
+      }
+
+      .mergeable {
+        display:flex;
+        align-items:center;
+      }
+
+      .mergekey {
+        margin-top:2.5em;
+        display:flex;
+        font-size:2em;
       }
 
       #main-charts {
@@ -160,11 +171,14 @@ found in the LICENSE file.
 
       <div id="mergeable-charts">
         <template is="dom-repeat" items="[[mergeableChartSectionIds]]" as="id" index-as="idIndex">
-          <chart-section
-            state-path="[[statePath]].mergeableChartSectionsById.[[id]]"
-            linked-state-path="[[statePath]].linkedChartState">
-          </chart-section>
+          <div class="mergeable">
+            <div class="mergekey">B</div>
+            <chart-section
+              state-path="[[statePath]].mergeableChartSectionsById.[[id]]"
+              linked-state-path="[[statePath]].linkedChartState">
+            </chart-section>
         </template>
+        </div>
       </div>
     </div>
   </template>

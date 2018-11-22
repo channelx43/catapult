@@ -51,6 +51,7 @@ tr.exportTo('cp', () => {
 
   class TimeseriesRequest extends cp.RequestBase {
     constructor(options) {
+      console.log("Making timeseries request");
       super(options);
       this.method_ = 'POST';
       this.measurement_ = options.measurement;
