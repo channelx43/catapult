@@ -88,8 +88,6 @@ tr.exportTo('cp', () => {
         return;
       }
 
-      console.log(response.data);
-
       let unit = tr.b.Unit.byJSONName[response.units];
       let conversionFactor = 1;
       if (!unit) {

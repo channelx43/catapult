@@ -374,20 +374,10 @@ tr.exportTo('cp', () => {
         if (statistic == null)
           statistic = "avg";
 
-        console.log("ALERT IS");
-        console.log(alert);
         dispatch(
           'newChart',
           statePath,
           {
-/*            parameters: {
-              bots: ["ChromiumPerf:mac-10_12_laptop_low_end-perf"],
-              measurements: ["memory:chrome:all_processes:reported_by_chrome:malloc:effective_size"],
-              statistic: "avg",
-              testCases: ["browse:media:tumblr:2018"],
-              testSuites: ["system_health.memory_desktop"],
-            }*/
-
             parameters:{
               bots:[alert.descriptor.bot],
               measurements:[alert.descriptor.measurement],
@@ -712,22 +702,7 @@ tr.exportTo('cp', () => {
     },
 
     newChart: (statePath, options) => async(dispatch, getState) => {
-
-/*
-maxRevision: 608316
-minRevision: undefined
-parameters:
-bots: ["ChromiumPerf:mac-10_12_laptop_low_end-perf"]
-measurements: ["memory:chrome:all_processes:reported_by_chrome:malloc:effective_size"]
-statistic: "avg"
-testCases: ["browse:media:tumblr:2018"]
-testSuites: ["system_health.memory_desktop"]*/
-
       const params = options.parameters;
-      console.log("options");
-      console.log(options);
-      console.log("params");
-      console.log(params);
 
       dispatch(Redux.CHAIN(
           {

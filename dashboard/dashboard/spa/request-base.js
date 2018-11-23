@@ -70,14 +70,7 @@ tr.exportTo('cp', () => {
         signal: this.signal_,
       });
       mark.end();
-      let json = "";
-      try {
-        json = await response.json();
-      } catch (e) {
-        console.log("Couldn't parse response JSON " + e);
-        return;
-      }
-      return this.postProcess_(json);
+      return this.postProcess_(await response.json());
     }
 
     abort() {

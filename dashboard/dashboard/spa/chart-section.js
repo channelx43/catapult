@@ -263,7 +263,6 @@ tr.exportTo('cp', () => {
             dispatch, getState);
         ChartSection.actions.maybeLoadTimeseries(statePath)(dispatch, getState);
       } else {
-        console.log("JUST FOCUSING suite");
         cp.MenuInput.actions.focus(`${statePath}.testSuite`)(
             dispatch, getState);
       }
@@ -398,14 +397,11 @@ tr.exportTo('cp', () => {
     maybeLoadTimeseries: statePath => async(dispatch, getState) => {
       // If the first 3 components are filled, then load the timeseries.
       const state = Polymer.Path.get(getState(), statePath);
-      console.log("maybeLoadTimeseries");
       if (state.testSuite.selectedOptions.length &&
           state.measurement.selectedOptions.length &&
           state.statistic.selectedOptions.length) {
-        console.log("Load time series");
         ChartSection.actions.loadTimeseries(statePath)(dispatch, getState);
       } else {
-        console.log("clearing time series");
         ChartSection.actions.clearTimeseries(statePath)(dispatch, getState);
       }
     },
