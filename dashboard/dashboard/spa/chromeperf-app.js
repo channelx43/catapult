@@ -53,7 +53,13 @@ tr.exportTo('cp', () => {
     }
   }
 
+  const MERGE_HOTKEYS = ["j", "k", "l", ";"];
+
   class ChromeperfApp extends cp.ElementBase {
+    mergeHotkeyGetter(id) {
+      return MERGE_HOTKEYS[id];
+    }
+
     get clientId() {
       return CLIENT_ID;
     }
@@ -175,6 +181,8 @@ tr.exportTo('cp', () => {
     alertsSectionsById: options => {return {};},
     chartSectionIds: options => [],
     chartSectionsById: options => {return {};},
+    mergeableChartSectionIds: options => [],
+    mergeableChartSectionsById: options => {return {};},
     closedAlertsIds: options => undefined,
     closedChartIds: options => undefined,
     // App-route sets |route|, and redux sets |reduxRoutePath|.
@@ -232,8 +240,29 @@ tr.exportTo('cp', () => {
 
         // Now, if the user is signed in, we have authorizationHeaders. Try to
         // restore session state, which might include internal data.
-        await ChromeperfApp.actions.restoreFromRoute(
-            statePath, routeParams)(dispatch, getState);
+//        await ChromeperfApp.actions.restoreFromRoute(
+//          statePath, routeParams)(dispatch, getState);
+
+
+        document.addEventListener("keydown", (e) => {
+          switch (e.key) {
+          case "i":
+            dispatch("ignoreGroup", statePath);
+            break;
+          case "b":
+            dispatch("bisectGroup", statePath);
+            break;
+          case "s":
+            dispatch("skipForDebug", statePath);
+            break;
+          }
+          const mergeIndex = MERGE_HOTKEYS.indexOf(e.key);
+          if (mergeIndex >= 0) {
+            dispatch("mergeWithAlertWithIndex", statePath, mergeIndex);
+          }
+        });
+
+        dispatch("fetchAlertGroups", statePath);
 
         // The app is done loading.
         dispatch(Redux.UPDATE(statePath, {
@@ -246,6 +275,203 @@ tr.exportTo('cp', () => {
           cp.ChromeperfApp.actions.getRecentBugs()(dispatch, getState);
         }
       },
+
+    mergeWithAlertWithIndex:(statePath, mergeIndex) => async (dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroupMergeables = state.alertGroupMergeables;
+
+      if (mergeIndex > alertGroupMergeables.length)
+        return;
+
+      const alertGroups = state.alertGroups;
+      const alertKeys = alertGroups[0].map(a => a.key)
+      const bugId = alertGroupMergeables[mergeIndex].bug_id;
+
+      const request = new cp.ExistingBugRequest({alertKeys: alertKeys, bugId});
+      await request.response;
+
+      console.log("merged with " + bugId);
+
+      dispatch({
+        type: ChromeperfApp.reducers.advanceAlertGroup.name,
+        statePath,
+      });
+      dispatch("displayCurrentAlertGroup", statePath);
+
+    },
+
+    fetchAlertGroups:(statePath) => async (dispatch, getState) => {
+      // Queries dashboard/dashboard/api/alerts.py.
+      // UnpriviledgedPost.
+      const request = new cp.AlertsRequest({ body: {
+        sheriff: "Chromium Perf Sheriff",
+        is_improvement: false,
+        recovered: false,
+        bug_id: '',
+        limit: 500,
+      }});
+
+      const response = await request.response;
+      let alerts = response.anomalies;
+      alerts = alerts.filter(alert => alert.bug_id == null);
+      let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
+
+      dispatch(Redux.UPDATE(statePath, {alertGroups}));
+      dispatch("displayCurrentAlertGroup", statePath);
+    },
+    fetchAlertGroupMergeables: (statePath) => async(dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroups = state.alertGroups;
+      if (alertGroups.length == 0) {
+        console.log("No alert groups");
+        return;
+      }
+
+      const currentAlertGroup = alertGroups[0];
+      let min_revision = Number.MAX_SAFE_INTEGER;
+      let max_revision = 0;
+      for (const alert of currentAlertGroup) {
+        min_revision = Math.min(min_revision, alert.start_revision);
+        max_revision = Math.max(max_revision, alert.end_revision);
+      }
+
+      // Fetch merged.
+      const mergeablesRequest = new cp.AlertsRequest({ body: {
+        sheriff: "Chromium Perf Sheriff",
+        is_improvement: false,
+        limit: 500,
+        max_start_revision: max_revision,
+        min_end_revision: min_revision,
+        triaged: true,
+      }});
+
+      const mergeablesResponse = await mergeablesRequest.response;
+      let alertGroupMergeables = mergeablesResponse.anomalies;
+
+      alertGroupMergeables = alertGroupMergeables.filter(alert => alert.bug_id != null && alert.bug_id >= 0);
+
+      // Group the already triaged alerts, and take the first alert from each group, up to the first 4.
+      alertGroupMergeables = d.groupAlerts(alertGroupMergeables, false).map((alertGroup) => alertGroup[0]).slice(0, 4);
+
+      dispatch(Redux.UPDATE(statePath, {alertGroupMergeables}));
+
+      dispatch("displayCurrentAlertGroupMergeables", statePath);
+    },
+
+    displayCurrentAlertGroup: (statePath) => async (dispatch, getState) => {
+      dispatch("closeAllCharts", statePath)
+
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroups = state.alertGroups;
+
+      // TODO - cats.
+      if (alertGroups.length == 0)
+        return;
+
+      let alertGroup = alertGroups[0];
+      for (let alert of alertGroup) {
+        let statistic = alert.descriptor.statistic;
+        if (statistic == null)
+          statistic = "avg";
+
+        dispatch(
+          'newChart',
+          statePath,
+          {
+            parameters:{
+              bots:[alert.descriptor.bot],
+              measurements:[alert.descriptor.measurement],
+              statistic,
+              testCases:[alert.descriptor.testCase],
+              testSuites:[alert.descriptor.testSuite],
+            }
+          });
+      }
+      dispatch("fetchAlertGroupMergeables", statePath);
+    },
+
+    displayCurrentAlertGroupMergeables: (statePath) => async (dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alerts = state.alertGroupMergeables;
+
+      for (let alert of alerts) {
+        dispatch(
+          'newChart',
+          statePath,
+          {
+            "mergeable": true,
+            "parameters":{
+              "testSuites":[alert.descriptor.testSuite],
+              "measurements":[alert.descriptor.measurement],
+              "bots":[alert.descriptor.bot],
+              "testCases":[alert.descriptor.testCase],
+              "statistic":alert.descriptor.statistic,
+            }
+          });
+      }
+    },
+
+    ignoreGroup: (statePath) => async (dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroups = state.alertGroups;
+      const alertKeys = alertGroups[0].map(a => a.key)
+
+      // -2 might be the magic word to ignore alerts?
+      const request = new cp.ExistingBugRequest({alertKeys: alertKeys, bugId: -2});
+      await request.response;
+
+      dispatch({
+        type: ChromeperfApp.reducers.advanceAlertGroup.name,
+        statePath,
+      });
+      dispatch("displayCurrentAlertGroup", statePath);
+    },
+
+    skipForDebug: (statePath) => async (dispatch, getState) => {
+      dispatch({
+        type: ChromeperfApp.reducers.advanceAlertGroup.name,
+        statePath,
+      });
+      dispatch("displayCurrentAlertGroup", statePath);
+    },
+
+    bisectGroup: (statePath) => async (dispatch, getState) => {
+      const state = Polymer.Path.get(getState(), statePath);
+      const alertGroups = state.alertGroups;
+      const alerts = alertGroups[0].map(cp.AlertsSection.transformAlert);
+
+      const triageNew = new cp.TriageNew();
+
+      let userEmail = getState().userEmail;
+
+      if (window.IS_DEBUG) {
+        userEmail = 'you@chromium.org';
+      }
+      if (!userEmail) {
+        console.log("no user email");
+        return;
+      }
+
+      const newBug = {
+        cc: userEmail,
+        alertKeys: alerts.map(a => a.key),
+        components: cp.TriageNew.collectComponents(alerts),
+        description: '',
+        labels: cp.TriageNew.collectLabels(alerts),
+        owner: '',
+        summary: cp.TriageNew.summarize(alerts),
+      }
+
+      const request = new cp.NewBugRequest({...newBug});
+
+      dispatch({
+        type: ChromeperfApp.reducers.advanceAlertGroup.name,
+        statePath
+      });
+      dispatch("displayCurrentAlertGroup", statePath);
+      const bugId = await request.response;
+      console.log("BUG ID " + bugId);
+    },
 
     reportSectionShowing: (statePath, showingReportSection) =>
       async(dispatch, getState) => {
@@ -476,6 +702,8 @@ tr.exportTo('cp', () => {
     },
 
     newChart: (statePath, options) => async(dispatch, getState) => {
+      const params = options.parameters;
+
       dispatch(Redux.CHAIN(
           {
             type: ChromeperfApp.reducers.newChart.name,
@@ -547,6 +775,13 @@ tr.exportTo('cp', () => {
       };
     },
 
+    advanceAlertGroup(state, action, rootState) {
+      return {
+        ...state,
+        alertGroups: state.alertGroups.slice(1, state.alertGroups.length),
+      }
+    },
+
     newAlerts: (state, {sectionId, options}, rootState) => {
       for (const alerts of Object.values(state.alertsSectionsById)) {
         // If the user mashes the ALERTS button, don't open copies of the same
@@ -575,7 +810,14 @@ tr.exportTo('cp', () => {
     },
 
     newChart: (state, action, rootState) => {
-      for (const chart of Object.values(state.chartSectionsById)) {
+      let currentChartSectionIdsKey = "chartSectionIds";
+      let currentChartSectionsByIdKey = "chartSectionsById";
+      if (action.options && action.options.mergeable) {
+        currentChartSectionIdsKey = "mergeableChartSectionIds";
+        currentChartSectionsByIdKey = "mergeableChartSectionsById";
+      }
+
+      for (const chart of Object.values(state[currentChartSectionsByIdKey])) {
         // If the user mashes the OPEN CHART button in the alerts-section, for
         // example, don't open multiple copies of the same chart.
         if ((action.options && action.options.clone) ||
@@ -583,13 +825,15 @@ tr.exportTo('cp', () => {
           continue;
         }
         // TODO scroll to the matching chart.
-        if (state.chartSectionIds.includes(chart.sectionId)) return state;
+        if (state[currentChartSectionIdsKey].includes(chart.sectionId)) {
+          return state;
+        }
         return {
           ...state,
           closedChartIds: undefined,
-          chartSectionIds: [
+          currentChartSectionIdsKey: [
             chart.sectionId,
-            ...state.chartSectionIds,
+            ...state[currentChartSectionIdsKey],
           ],
         };
       }
@@ -600,11 +844,11 @@ tr.exportTo('cp', () => {
         sectionId,
         ...cp.ChartSection.buildState(action.options || {}),
       };
-      const chartSectionsById = {...state.chartSectionsById};
+      const chartSectionsById = {...state[currentChartSectionsByIdKey]};
       chartSectionsById[sectionId] = newSection;
-      state = {...state, chartSectionsById};
+      state = {...state, [currentChartSectionsByIdKey]: chartSectionsById};
 
-      const chartSectionIds = Array.from(state.chartSectionIds);
+      const chartSectionIds = Array.from(state[currentChartSectionIdsKey]);
       chartSectionIds.push(sectionId);
 
       if (chartSectionIds.length === 1 && action.options) {
@@ -612,7 +856,8 @@ tr.exportTo('cp', () => {
             cp.ChartPair.LinkedState, action.options);
         state = {...state, linkedChartState};
       }
-      return {...state, chartSectionIds};
+
+      return {...state, [currentChartSectionIdsKey]: chartSectionIds};
     },
 
     closeAlerts: (state, action, rootState) => {
@@ -658,7 +903,10 @@ tr.exportTo('cp', () => {
       return {
         ...state,
         chartSectionIds: [],
-        closedChartIds: Array.from(state.chartSectionIds),
+        mergeableChartSectionIds: [],
+        chartSectionsById: {},
+        mergeableChartSectionsById: {},
+        closedChartIds: Array.from(state.chartSectionIds).concat(Array.from(state.mergeableChartSectionIds)),
       };
     },
 

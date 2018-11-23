@@ -1394,6 +1394,8 @@ tr.exportTo('cp', () => {
 
   return {
     AlertsSection,
+    ExistingBugRequest,
+    NewBugRequest,
     MS_PER_MONTH,
   };
 });

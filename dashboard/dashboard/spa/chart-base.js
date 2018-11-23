@@ -109,7 +109,7 @@ tr.exportTo('cp', () => {
     columns: options => [],
     dotCursor: options => 'pointer',
     dotRadius: options => 6,
-    graphHeight: options => 200,
+    graphHeight: options => 150,
     lines: options => [],
     tooltip: options => {
       return {

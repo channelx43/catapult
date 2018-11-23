@@ -47,15 +47,6 @@ found in the LICENSE file.
         </div>
       </template>
     </menu-input>
-
-    <cp-checkbox
-        id="aggregate"
-        disabled$="[[!isMultiple_(selectedOptions)]]"
-        checked="[[isAggregated]]"
-        hidden$="[[!canAggregate]]"
-        on-change="onAggregateChange_">
-      Aggregate
-    </cp-checkbox>
   </template>
 </dom-module>
 <script src="/dashboard/spa/chart-parameter.js"></script>

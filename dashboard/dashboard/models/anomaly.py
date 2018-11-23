@@ -305,6 +305,10 @@ class Anomaly(internal_only_model.InternalOnlyModel):
       elif min_timestamp or max_timestamp:
         inequality_property = 'timestamp'
 
+    # HACKITY HACK
+    # Getting a weird index error when supplying min/max revisions. Use post filters for everything.
+    inequality_property = 'key'
+
     post_filters = []
     if not inequality_property:
       return query, post_filters

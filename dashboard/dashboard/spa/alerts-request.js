@@ -69,7 +69,7 @@ tr.exportTo('cp', () => {
           bug_id: bugId,
           bug_labels: [],
           descriptor: {
-            bot: 'master:bot' + (i * 3),
+            bot: 'master:bot' + (i % 3),
             measurement: measurements[i],
             statistic: 'avg',
             testCase: testCases[i % testCases.length],
