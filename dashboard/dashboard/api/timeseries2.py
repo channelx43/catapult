@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from google.appengine.ext import ndb
 
 from dashboard import alerts
@@ -14,6 +16,7 @@ from dashboard.models import anomaly
 from dashboard.models import graph_data
 from dashboard.models import histogram
 
+logger = logging.getLogger(__name__)
 
 # These limits should prevent DeadlineExceededErrors.
 # TODO(benjhayden): Find a better strategy for staying under the deadline.
@@ -52,6 +55,7 @@ class Timeseries2Handler(api_request_handler.ApiRequestHandler):
     try:
       result = query.FetchSync()
     except AssertionError:
+      logger.error("requested internal-only data but is not authorized");
       # The caller has requested internal-only data but is not authorized.
       raise api_request_handler.NotFoundError
     return result

@@ -51,7 +51,6 @@ tr.exportTo('cp', () => {
 
   class TimeseriesRequest extends cp.RequestBase {
     constructor(options) {
-      console.log("Making timeseries request");
       super(options);
       this.method_ = 'POST';
       this.measurement_ = options.measurement;
@@ -62,9 +61,7 @@ tr.exportTo('cp', () => {
       if (options.testCase) this.body_.set('test_case', options.testCase);
 
       this.statistic_ = options.statistic || 'avg';
-      if (options.statistic) {
-        this.body_.set('statistic', options.statistic);
-      }
+      this.body_.set('statistic', this.statistic_);
 
       if (options.buildType) this.body_.set('build_type', options.buildType);
 
@@ -87,6 +84,9 @@ tr.exportTo('cp', () => {
 
     postProcess_(response, isFromChannel = false) {
       if (!response) return;
+
+      console.log(response.data);
+
       let unit = tr.b.Unit.byJSONName[response.units];
       let conversionFactor = 1;
       if (!unit) {

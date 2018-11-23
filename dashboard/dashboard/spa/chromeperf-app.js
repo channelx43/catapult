@@ -279,15 +279,9 @@ tr.exportTo('cp', () => {
     mergeWithAlertWithIndex:(statePath, mergeIndex) => async (dispatch, getState) => {
       const state = Polymer.Path.get(getState(), statePath);
       const alertGroupMergeables = state.alertGroupMergeables;
-      console.log(alertGroupMergeables);
-      console.log(mergeIndex);
 
       if (mergeIndex > alertGroupMergeables.length)
         return;
-
-
-      console.log("Would merge with");
-      console.log(alertGroupMergeables[mergeIndex]);
 
       const alertGroups = state.alertGroups;
       const alertKeys = alertGroups[0].map(a => a.key)
@@ -311,18 +305,14 @@ tr.exportTo('cp', () => {
       // UnpriviledgedPost.
       const request = new cp.AlertsRequest({ body: {
         sheriff: "Chromium Perf Sheriff",
-        triaged: false,
         is_improvement: false,
+        recovered: false,
         bug_id: '',
         limit: 50,
       }});
 
       const response = await request.response;
       let alerts = response.anomalies;
-
-      // This should be empty???
-      let alreadyTriaged = alerts.filter(alert => alert.bug_id != null || alert.bug_id < 0);
-
       alerts = alerts.filter(alert => alert.bug_id == null);
       let alertGroups = d.groupAlerts(alerts, false).map((alertGroup) => alertGroup.slice(0, 4));
 
@@ -336,7 +326,6 @@ tr.exportTo('cp', () => {
         console.log("No alert groups");
         return;
       }
-      console.log("Getting mergy things");
 
       const currentAlertGroup = alertGroups[0];
       let min_revision = Number.MAX_SAFE_INTEGER;
@@ -349,30 +338,29 @@ tr.exportTo('cp', () => {
       // Fetch merged.
       const mergeablesRequest = new cp.AlertsRequest({ body: {
         sheriff: "Chromium Perf Sheriff",
-        triaged: true,
         is_improvement: false,
         limit: 50,
         max_start_revision: max_revision,
         min_end_revision: min_revision,
+        triaged: true,
       }});
 
       const mergeablesResponse = await mergeablesRequest.response;
       let alertGroupMergeables = mergeablesResponse.anomalies;
 
-      let untriaged = alertGroupMergeables.filter(alert => alert.bug_id == null || alert.bug_id < 0);
-      console.log("Shouldn't be any untriaged or ignored");
-      console.log(untriaged);
+      console.log("alertGroupMergeables");
+      console.log(alertGroupMergeables);
 
       alertGroupMergeables = alertGroupMergeables.filter(alert => alert.bug_id != null && alert.bug_id >= 0);
-      console.log("Triaged:")
+      console.log("post filter")
       console.log(alertGroupMergeables);
 
       // Group the already triaged alerts, and take the first alert from each group, up to the first 4.
       alertGroupMergeables = d.groupAlerts(alertGroupMergeables, false).map((alertGroup) => alertGroup[0]).slice(0, 4);
-      dispatch(Redux.UPDATE(statePath, {alertGroupMergeables}));
-
-      console.log("After filtering");
+      console.log("post grouping");
       console.log(alertGroupMergeables);
+
+      dispatch(Redux.UPDATE(statePath, {alertGroupMergeables}));
 
       dispatch("displayCurrentAlertGroupMergeables", statePath);
     },
@@ -389,14 +377,12 @@ tr.exportTo('cp', () => {
 
       let alertGroup = alertGroups[0];
       for (let alert of alertGroup) {
-        console.log("new chart");
-        console.log(alert.descriptor);
+        console.log("ALERT IS");
+        console.log(alert);
         dispatch(
           'newChart',
           statePath,
           {
-            "minRevision":undefined,
-            "maxRevision":undefined,
             "parameters":{
               "testSuites":[alert.descriptor.testSuite],
               "measurements":[alert.descriptor.measurement],
@@ -413,16 +399,15 @@ tr.exportTo('cp', () => {
       const state = Polymer.Path.get(getState(), statePath);
       const alerts = state.alertGroupMergeables;
 
-      console.log("Displaying alerts for");
+      console.log("NEW MERGEABLE CHARTS");
       console.log(alerts);
+
 
       for (let alert of alerts) {
         dispatch(
           'newChart',
           statePath,
           {
-            "minRevision":undefined,
-            "maxRevision":undefined,
             "mergeable": true,
             "parameters":{
               "testSuites":[alert.descriptor.testSuite],
@@ -452,7 +437,6 @@ tr.exportTo('cp', () => {
     },
 
     skipForDebug: (statePath) => async (dispatch, getState) => {
-      console.log("skipForDebug");
       dispatch({
         type: ChromeperfApp.reducers.advanceAlertGroup.name,
         statePath,
@@ -727,6 +711,33 @@ tr.exportTo('cp', () => {
     },
 
     newChart: (statePath, options) => async(dispatch, getState) => {
+/*      const params = options.parameters;
+      console.log("TIME SERIES MANUAL REQUEST");
+      console.log("options");
+      console.log(options);
+      console.log("params");
+      console.log(params);
+
+      const requestOptions = {
+        measurement: params.measurements[0],
+        testCase: params.testCases[0],
+        testSuite: params.testSuites[0],
+        bot: params.bots[0],
+        statistic: params.statistic,
+        buildType: "test",
+        levelOfDetail: cp.LEVEL_OF_DETAIL.ANNOTATIONS,
+//        minRevision:,
+//        maxRevision:
+      }
+
+      console.log("requestOptions");
+      console.log(requestOptions);
+
+      const request = new cp.TimeseriesRequest(requestOptions);
+      const response = await request.response;
+      console.log("TIME SERIES MANUAL REQUEST RESPONSE");
+      console.log(response);*/
+
       dispatch(Redux.CHAIN(
           {
             type: ChromeperfApp.reducers.newChart.name,
@@ -799,7 +810,6 @@ tr.exportTo('cp', () => {
     },
 
     advanceAlertGroup(state, action, rootState) {
-      console.log("advancing");
       return {
         ...state,
         alertGroups: state.alertGroups.slice(1, state.alertGroups.length),
@@ -930,7 +940,7 @@ tr.exportTo('cp', () => {
         mergeableChartSectionIds: [],
         chartSectionsById: {},
         mergeableChartSectionsById: {},
-        closedChartIds: Array.from(state.chartSectionIds),
+        closedChartIds: Array.from(state.chartSectionIds).concat(Array.from(state.mergeableChartSectionIds)),
       };
     },
 

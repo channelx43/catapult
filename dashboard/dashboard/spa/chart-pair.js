@@ -643,16 +643,9 @@ tr.exportTo('cp', () => {
 
   ChartPair.findFirstNonEmptyLineDescriptor = async(
     lineDescriptors, refStatePath, dispatch, getState) => {
-      console.log("findFirstNonEmptyLineDescriptor");
     for (const lineDescriptor of lineDescriptors) {
       const fetchDescriptors = cp.ChartTimeseries.createFetchDescriptors(
           lineDescriptor, cp.LEVEL_OF_DETAIL.XY);
-
-      console.log("fetch descriptors")
-      console.log(fetchDescriptors);
-
-      console.log("lineDescriptor");
-      console.log(lineDescriptor);
 
       const results = await Promise.all(fetchDescriptors.map(
           async fetchDescriptor => {
@@ -661,9 +654,6 @@ tr.exportTo('cp', () => {
               return timeseries;
             }
           }));
-
-      console.log("results is");
-      console.log(results);
 
       for (const timeseries of results) {
         if (!timeseries || !timeseries.length) continue;
