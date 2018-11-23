@@ -348,17 +348,10 @@ tr.exportTo('cp', () => {
       const mergeablesResponse = await mergeablesRequest.response;
       let alertGroupMergeables = mergeablesResponse.anomalies;
 
-      console.log("alertGroupMergeables");
-      console.log(alertGroupMergeables);
-
       alertGroupMergeables = alertGroupMergeables.filter(alert => alert.bug_id != null && alert.bug_id >= 0);
-      console.log("post filter")
-      console.log(alertGroupMergeables);
 
       // Group the already triaged alerts, and take the first alert from each group, up to the first 4.
       alertGroupMergeables = d.groupAlerts(alertGroupMergeables, false).map((alertGroup) => alertGroup[0]).slice(0, 4);
-      console.log("post grouping");
-      console.log(alertGroupMergeables);
 
       dispatch(Redux.UPDATE(statePath, {alertGroupMergeables}));
 
@@ -398,10 +391,6 @@ tr.exportTo('cp', () => {
     displayCurrentAlertGroupMergeables: (statePath) => async (dispatch, getState) => {
       const state = Polymer.Path.get(getState(), statePath);
       const alerts = state.alertGroupMergeables;
-
-      console.log("NEW MERGEABLE CHARTS");
-      console.log(alerts);
-
 
       for (let alert of alerts) {
         dispatch(
@@ -711,32 +700,11 @@ tr.exportTo('cp', () => {
     },
 
     newChart: (statePath, options) => async(dispatch, getState) => {
-/*      const params = options.parameters;
-      console.log("TIME SERIES MANUAL REQUEST");
+      const params = options.parameters;
       console.log("options");
       console.log(options);
       console.log("params");
       console.log(params);
-
-      const requestOptions = {
-        measurement: params.measurements[0],
-        testCase: params.testCases[0],
-        testSuite: params.testSuites[0],
-        bot: params.bots[0],
-        statistic: params.statistic,
-        buildType: "test",
-        levelOfDetail: cp.LEVEL_OF_DETAIL.ANNOTATIONS,
-//        minRevision:,
-//        maxRevision:
-      }
-
-      console.log("requestOptions");
-      console.log(requestOptions);
-
-      const request = new cp.TimeseriesRequest(requestOptions);
-      const response = await request.response;
-      console.log("TIME SERIES MANUAL REQUEST RESPONSE");
-      console.log(response);*/
 
       dispatch(Redux.CHAIN(
           {
