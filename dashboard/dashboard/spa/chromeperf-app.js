@@ -370,18 +370,30 @@ tr.exportTo('cp', () => {
 
       let alertGroup = alertGroups[0];
       for (let alert of alertGroup) {
+        let statistic = alert.descriptor.statistic;
+        if (statistic == null)
+          statistic = "avg";
+
         console.log("ALERT IS");
         console.log(alert);
         dispatch(
           'newChart',
           statePath,
           {
-            "parameters":{
-              "testSuites":[alert.descriptor.testSuite],
-              "measurements":[alert.descriptor.measurement],
-              "bots":[alert.descriptor.bot],
-              "testCases":[alert.descriptor.testCase],
-              "statistic":alert.descriptor.statistic,
+/*            parameters: {
+              bots: ["ChromiumPerf:mac-10_12_laptop_low_end-perf"],
+              measurements: ["memory:chrome:all_processes:reported_by_chrome:malloc:effective_size"],
+              statistic: "avg",
+              testCases: ["browse:media:tumblr:2018"],
+              testSuites: ["system_health.memory_desktop"],
+            }*/
+
+            parameters:{
+              bots:[alert.descriptor.bot],
+              measurements:[alert.descriptor.measurement],
+              statistic,
+              testCases:[alert.descriptor.testCase],
+              testSuites:[alert.descriptor.testSuite],
             }
           });
       }
@@ -700,6 +712,17 @@ tr.exportTo('cp', () => {
     },
 
     newChart: (statePath, options) => async(dispatch, getState) => {
+
+/*
+maxRevision: 608316
+minRevision: undefined
+parameters:
+bots: ["ChromiumPerf:mac-10_12_laptop_low_end-perf"]
+measurements: ["memory:chrome:all_processes:reported_by_chrome:malloc:effective_size"]
+statistic: "avg"
+testCases: ["browse:media:tumblr:2018"]
+testSuites: ["system_health.memory_desktop"]*/
+
       const params = options.parameters;
       console.log("options");
       console.log(options);
