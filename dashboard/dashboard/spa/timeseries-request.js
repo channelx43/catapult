@@ -83,7 +83,10 @@ tr.exportTo('cp', () => {
     }
 
     postProcess_(response, isFromChannel = false) {
-      if (!response) return;
+      if (response == null || response.data == null) {
+        console.log("NULL request response");
+        return;
+      }
 
       console.log(response.data);
 

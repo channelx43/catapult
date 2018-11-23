@@ -308,7 +308,7 @@ tr.exportTo('cp', () => {
         is_improvement: false,
         recovered: false,
         bug_id: '',
-        limit: 50,
+        limit: 500,
       }});
 
       const response = await request.response;
@@ -339,7 +339,7 @@ tr.exportTo('cp', () => {
       const mergeablesRequest = new cp.AlertsRequest({ body: {
         sheriff: "Chromium Perf Sheriff",
         is_improvement: false,
-        limit: 50,
+        limit: 500,
         max_start_revision: max_revision,
         min_end_revision: min_revision,
         triaged: true,
